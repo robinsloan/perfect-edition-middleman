@@ -117,9 +117,15 @@
     let columnGap = getComputed("column-gap");
     let columnTotal = columnWidth + columnGap;
 
-    let pageEdge = pageNumber * columnTotal;
+    var pageEdge = pageNumber * columnTotal;
+    if (pageEdge > bookElement.scrollWidth) {
+      // Page number is greater than total number of pages currently displayed
+      // (this isn't uncommon, because of reflow for different window sizes)
+      // so, let's just go the end. Not a perfect solution, fine for now
+      pageEdge = bookElement.scrollWidth - (columnTotal + columnWidth);
+    }
 
-    writePageNumber(pageNumber);
+    // writePageNumber(pageNumber);
 
     // the cute tiny bookmark
     let bookmarkElement = document.querySelector("div.bookmark");
