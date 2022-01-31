@@ -99,8 +99,9 @@
     // you can't turn the page if you're at the end
     if (
       (turnDirection > 0) &&
-      (getRect(endElement).x < (window.innerWidth + columnTotal / 2.0))
+      (getRect(endElement).x <= (window.innerWidth + columnGap))
     ) {
+      console.log("thud");
       return;
     }
 
@@ -177,9 +178,11 @@
 
   document.addEventListener("keydown", (e) => {
     if (event.keyCode === 37) { // left
+      e.preventDefault();
       turnPageBack();
     }
     if ((event.keyCode === 39) || (event.keyCode === 32)) { // right, space
+      e.preventDefault();
       turnPageForward();
     }
   });
