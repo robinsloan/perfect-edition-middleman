@@ -1,0 +1,274 @@
+<%= partial "partial_head" -%>
+  <link href="/style/perfect-edition.css" type="text/css" rel="stylesheet" />
+
+  <script type="text/javascript">
+
+  if (window.location.hostname.includes("amazonaws.com") ||
+      window.location.hostname.includes("cloudfront.net") ) {
+    window.location.hostname = "www.robinsloan.com";
+  }
+
+  // https://github.com/iamdustan/smoothscroll/blob/master/src/smoothscroll.js
+  function smoothScroll(x) {
+    var startTime = performance.now();
+    var startX = document.body.scrollLeft;
+    var startY = 0;
+
+    smoothScrollStep({
+      startTime: startTime,
+      startX: startX || 0,
+      startY: 0,
+      x: x || 0,
+      y: 0,
+    });
+  }
+
+  function ease(k) {
+    return (-Math.pow(2, -10 * k) + 1);
+  }
+
+  const SCROLL_TIME = 200; // millis
+
+  function smoothScrollStep(context) {
+    let time = performance.now();
+    var elapsedTime = (time - context.startTime) / SCROLL_TIME;
+
+    // avoid elapsed times higher than one
+    elapsedTime = elapsedTime > 1.0 ? 1.0 : elapsedTime;
+
+    // apply easing to elapsed time
+    let easedValue = ease(elapsedTime);
+
+    let currentX = context.startX + (context.x - context.startX) * easedValue;
+
+    document.body.scrollLeft = currentX;
+
+    // keep scrolling if we have not reached our destination
+    // this was > 1.0 and that wasn't working for some reason
+    if (Math.abs(currentX - context.x) > 2.0) {
+      requestAnimationFrame(smoothScrollStep.bind(window, context));
+    }
+  }
+
+  function getComputed(propertyName) {
+    return Number(
+      getComputedStyle(bookElement)
+        .getPropertyValue(propertyName)
+        .replace("px", ""),
+    );
+  }
+
+  function getRect(element) {
+    // terrible hack for Firefox, which treats getBoundingClientRect as an
+    // inner dimension for some unknown reason:
+    let rects = element.getClientRects();
+    return rects[rects.length - 1];
+  }
+
+  function turnPageForward() {
+    turnPage(1);
+  }
+
+  function turnPageBack() {
+    turnPage(-1);
+  }
+
+  function turnPage(turnDirection) {
+    let currentLeftOffset = document.body.scrollLeft;
+    let columnWidth = getComputed("column-width");
+    let columnGap = getComputed("column-gap");
+    let columnTotal = columnWidth + columnGap;
+
+    // this was previously Math.floor which was causing problems when
+    // paging backwards
+
+    let closestPageNumber = Math.round(currentLeftOffset / columnTotal) +
+      turnDirection;
+
+    writePageNumber(closestPageNumber);
+
+    let closestPageEdge = closestPageNumber * columnTotal;
+
+    // aha, but what if we are already AT that page?
+    // 8.0 pixels is a bit of a "magic number"...
+    if (Math.abs(closestPageEdge - currentLeftOffset) < 8.0) {
+      closestPageEdge += columnTotal * turnDirection;
+      writePageNumber(closestPageNumber + 1); // hacky
+    }
+
+    // you can't turn the page if you're at the end
+    if (
+      (turnDirection > 0) &&
+      (getRect(endElement).x < window.innerWidth)
+    ) {
+      return;
+    }
+
+    // if we're turning a page, we are navigating away from a chapter title,
+    // so we want to clear this out
+    window.location.hash = "";
+
+    smoothScroll(closestPageEdge);
+  }
+
+  function turnToPage(pageNumber) {
+    let columnWidth = getComputed("column-width");
+    let columnGap = getComputed("column-gap");
+    let columnTotal = columnWidth + columnGap;
+
+    let pageEdge = pageNumber * columnTotal;
+
+    writePageNumber(pageNumber);
+
+    // the cute tiny bookmark
+    let bookmarkElement = document.querySelector("div.bookmark");
+    bookmarkElement.style.display = "block";
+    bookmarkElement.style.left = `${pageEdge + columnWidth / 2.0}px`;
+
+    document.body.scrollLeft = pageEdge;
+  }
+
+  function turnToAnchor(anchor) {
+    let editedAnchor = "chapter_" + anchor.replace("#", "");
+
+    let anchoredHeading = Array.from(document.querySelectorAll("h2"))
+      .find((heading) => {
+        return heading.getAttribute("id") == editedAnchor;
+      });
+
+    anchoredHeading.scrollIntoView();
+
+    let wherePageEdgeShouldBe = (window.innerWidth - getRect(bookElement).width) /
+      2.0;
+    let offset = getRect(anchoredHeading).x - wherePageEdgeShouldBe;
+
+    document.body.scrollLeft += offset;
+  }
+
+  <% story_id = current_page.data.title.gsub(/\W/, "_") -%>
+
+  function writePageNumber(pageNumber) {
+    window.localStorage.setItem("<%= story_id -%>_pageNumber", pageNumber);
+  }
+
+  function readPageNumber() {
+    let pageNumber = Number(window.localStorage.getItem("<%= story_id -%>_pageNumber"));
+    if (pageNumber > 1) {
+      turnToPage(pageNumber);
+    }
+  }
+
+  var bookElement;
+  var endElement;
+  var baseFontSize = 18.0;
+  var lastMouseDown = Date.now();
+  var lastClick = Date.now();
+
+  document.addEventListener("DOMContentLoaded", (e) => {
+    bookElement = document.querySelector("div.book");
+    endElement = document.querySelector("p.last-page");
+
+    if (window.location.hash.length > 1) { // > 1, because an empty "#" is length 1
+      turnToAnchor(window.location.hash);
+    } else {
+      readPageNumber();
+    }
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (event.keyCode === 37) { // left
+      turnPageBack();
+    }
+    if ((event.keyCode === 39) || (event.keyCode === 32)) { // right, space
+      turnPageForward();
+    }
+  });
+
+  document.addEventListener("wheel", (e) => {
+    if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+      e.preventDefault();
+      document.body.scrollLeft += e.deltaY;
+    }
+  }, { passive: false });
+
+  document.addEventListener("mousedown", function (e) {
+    lastMouseDown = Date.now();
+  });
+
+  // values in millis
+  const CLICK_DEBOUNCE_TIME = 50;
+  const LONG_PRESS_TIME = 250;
+
+  document.addEventListener("click", function (e) {
+    let now = Date.now();
+
+    // don't advance on long press (text selection?)
+    if ((now - lastMouseDown) > LONG_PRESS_TIME) {
+      return;
+    }
+
+    // don't advance on double-click
+    if ((now - lastClick) < CLICK_DEBOUNCE_TIME) {
+      return;
+    }
+
+    lastClick = now;
+
+    // don't advance on link click
+    if (e.target.tagName == "A") {
+      return;
+    }
+
+    // don't advance if we are selecting text
+    if (window.getSelection().toString().length > 0) {
+      return;
+    }
+
+    // ok... u can advance
+    if (e.clientX < (window.innerWidth / 3.0)) {
+      turnPageBack();
+    } else {
+      turnPageForward();
+    }
+  });
+
+  // hash change detector
+  // note: it's a window event, not a document event
+  window.addEventListener("hashchange", (e) => {
+    if (window.location.hash.length > 1) {
+      turnToAnchor(window.location.hash);
+    }
+  });
+
+  </script>
+</head>
+
+<body>
+
+<div class="book">
+
+<div class="tutorial">
+  <h2>How to Read</h2>
+  <p><i>On a phone:</i><br/>Swipe, or tap the edges of the page</p>
+  <p><i>On a laptop:</i><br/>Use the arrow keys, the space bar, or the touch pad</p>
+  <p><i>On a desktop:</i><br/> Use any of the above, or the scroll wheel</p>
+  <p>Basically, <small>everything works</small></p>
+</div>
+
+<div class="title"><h1><%= current_page.data.title -%></h1></div>
+
+<%= yield -%>
+<p class="return-page"><a href="/stories/">Return to the website</a></p>
+<p class="last-page"></p>
+<div class="bookmark">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" x="0px" y="0px" width="100%" height="100%" viewBox="0 0 40 80" xml:space="preserve">
+  <g>
+    <polygon points="0,0 0,80 20,70 40,80 40,0"/>
+  </g>
+</svg>
+</div>
+
+</div>
+
+</body>
+</html>
