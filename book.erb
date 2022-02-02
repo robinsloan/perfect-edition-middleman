@@ -1,4 +1,5 @@
 <%= partial "partial_head" -%>
+
   <link href="/style/perfect-edition.css" type="text/css" rel="stylesheet" />
 
   <script type="text/javascript">
@@ -81,7 +82,6 @@
 
     // this was previously Math.floor which was causing problems when
     // paging backwards
-
     let closestPageNumber = Math.round(currentLeftOffset / columnTotal) +
       turnDirection;
 
