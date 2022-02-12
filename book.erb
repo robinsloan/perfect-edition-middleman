@@ -10,18 +10,15 @@
   }
 
   // https://github.com/iamdustan/smoothscroll/blob/master/src/smoothscroll.js
-  function smoothScroll(x, turnSlow) {
+  function smoothScroll(x, shouldTurnSlow) {
     var startTime = performance.now();
     var startX = document.body.scrollLeft;
-    var startY = 0;
 
     smoothScrollStep({
       startTime: startTime,
       startX: startX || 0,
-      startY: 0,
       x: x || 0,
-      y: 0,
-      turnSlow : turnSlow
+      shouldTurnSlow : shouldTurnSlow
     });
   }
 
@@ -29,13 +26,12 @@
     return (-Math.pow(2, -10 * k) + 1);
   }
 
-  const SCROLL_TIME = 200; // millis
+  const SCROLL_TIME_FAST = 200; // millis
   const SCROLL_TIME_SLOW = 1000; // millis
 
   function smoothScrollStep(context) {
-    let time = performance.now();
-    let scrollTime = context.turnSlow ? SCROLL_TIME_SLOW : SCROLL_TIME;
-    var elapsedTime = (time - context.startTime) / scrollTime;
+    let scrollTime = context.shouldTurnSlow ? SCROLL_TIME_SLOW : SCROLL_TIME_FAST;
+    var elapsedTime = (performance.now() - context.startTime) / scrollTime;
 
     // avoid elapsed times higher than one
     elapsedTime = elapsedTime > 1.0 ? 1.0 : elapsedTime;
@@ -43,7 +39,7 @@
     // apply easing to elapsed time
     let easedValue = ease(elapsedTime);
 
-    let currentX = context.startX + (context.x - context.startX) * easedValue;
+    let currentX = context.startX + ((context.x - context.startX) * easedValue);
 
     document.body.scrollLeft = currentX;
 
@@ -81,7 +77,7 @@
     turnPage(0, true);
   }
 
-  function turnPage(turnDirection, turnSlow) {
+  function turnPage(turnDirection, shouldTurnSlow) {
     let currentLeftOffset = document.body.scrollLeft;
     let columnWidth = getComputed("column-width");
     let columnGap = getComputed("column-gap");
@@ -116,7 +112,7 @@
     // so we want to clear this out
     window.location.hash = "";
 
-    smoothScroll(closestPageEdge, turnSlow);
+    smoothScroll(closestPageEdge, shouldTurnSlow);
   }
 
   function turnToPage(pageNumber) {
@@ -216,8 +212,6 @@
       e.preventDefault();
       document.body.scrollLeft += e.deltaY;
     }
-
-
   }, { passive: false });
 
   document.addEventListener("mousedown", function (e) {
@@ -268,24 +262,17 @@
       turnToAnchor(window.location.hash);
     }
   });
-
   </script>
 </head>
-
 <body>
-
 <div class="book">
-
 <div class="tutorial">
   <h2>How to Read</h2>
-  <p><i>On a phone:</i><br/>Swipe, or tap the edges of the page</p>
-  <p><i>On a laptop:</i><br/>Use the arrow keys, the space bar, or the touch pad</p>
-  <p><i>On a desktop:</i><br/> Use any of the above, or the scroll wheel</p>
+  <p><i>On a phone:</i><br/>Tap the edges of the page</p>
+  <p><i>On a desktop:</i><br/>Click the edges of the page, or use the arrow keys or space bar</p>
   <p>Basically, <small>everything works</small></p>
 </div>
-
 <div class="title"><h1><%= current_page.data.title -%></h1></div>
-
 <%= yield -%>
 <p class="return-page"><a href="/stories/">Return to the website</a></p>
 <p class="last-page"></p>
