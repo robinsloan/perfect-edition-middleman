@@ -10,7 +10,7 @@
   }
 
   // https://github.com/iamdustan/smoothscroll/blob/master/src/smoothscroll.js
-  function smoothScroll(x) {
+  function smoothScroll(x, turnSlow) {
     var startTime = performance.now();
     var startX = document.body.scrollLeft;
     var startY = 0;
@@ -21,6 +21,7 @@
       startY: 0,
       x: x || 0,
       y: 0,
+      turnSlow : turnSlow
     });
   }
 
@@ -29,10 +30,12 @@
   }
 
   const SCROLL_TIME = 200; // millis
+  const SCROLL_TIME_SLOW = 1000; // millis
 
   function smoothScrollStep(context) {
     let time = performance.now();
-    var elapsedTime = (time - context.startTime) / SCROLL_TIME;
+    let scrollTime = context.turnSlow ? SCROLL_TIME_SLOW : SCROLL_TIME;
+    var elapsedTime = (time - context.startTime) / scrollTime;
 
     // avoid elapsed times higher than one
     elapsedTime = elapsedTime > 1.0 ? 1.0 : elapsedTime;
@@ -67,14 +70,18 @@
   }
 
   function turnPageForward() {
-    turnPage(1);
+    turnPage(1, false);
   }
 
   function turnPageBack() {
-    turnPage(-1);
+    turnPage(-1, false);
   }
 
-  function turnPage(turnDirection) {
+  function snapToPage() {
+    turnPage(0, true);
+  }
+
+  function turnPage(turnDirection, turnSlow) {
     let currentLeftOffset = document.body.scrollLeft;
     let columnWidth = getComputed("column-width");
     let columnGap = getComputed("column-gap");
@@ -109,7 +116,7 @@
     // so we want to clear this out
     window.location.hash = "";
 
-    smoothScroll(closestPageEdge);
+    smoothScroll(closestPageEdge, turnSlow);
   }
 
   function turnToPage(pageNumber) {
@@ -167,6 +174,7 @@
 
   var bookElement;
   var endElement;
+  var scrollTimer;
   var baseFontSize = 18.0;
   var lastMouseDown = Date.now();
   var lastClick = Date.now();
@@ -180,6 +188,16 @@
     } else {
       readPageNumber();
     }
+
+    document.body.addEventListener("scroll", (e) => {
+      if (scrollTimer) {
+        clearTimeout(scrollTimer);
+      }
+
+      scrollTimer = setTimeout(() => {
+        snapToPage();
+      }, 200);
+    });
   });
 
   document.addEventListener("keydown", (e) => {
@@ -198,6 +216,8 @@
       e.preventDefault();
       document.body.scrollLeft += e.deltaY;
     }
+
+
   }, { passive: false });
 
   document.addEventListener("mousedown", function (e) {
@@ -276,8 +296,6 @@
   </g>
 </svg>
 </div>
-
 </div>
-
 </body>
 </html>
