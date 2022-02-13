@@ -26,8 +26,8 @@
     return (-Math.pow(2, -10 * k) + 1);
   }
 
-  const SCROLL_TIME_FAST = 200; // millis
-  const SCROLL_TIME_SLOW = 1000; // millis
+  const SCROLL_TIME_FAST = 200.0; // millis
+  const SCROLL_TIME_SLOW = 1000.0; // millis
 
   function smoothScrollStep(context) {
     let scrollTime = context.shouldTurnSlow ? SCROLL_TIME_SLOW : SCROLL_TIME_FAST;
@@ -269,7 +269,7 @@
 <div class="tutorial">
   <h2>How to Read</h2>
   <p><i>On a phone:</i><br/>Tap the edges of the page</p>
-  <p><i>On a desktop:</i><br/>Click the edges of the page, or use the arrow keys or space bar</p>
+  <p><i>On a computer:</i><br/>Click the edges of the page, or use the arrow keys, or&nbsp;use&nbsp;the&nbsp;space&nbsp;bar</p>
   <p>Basically, <small>everything works</small></p>
 </div>
 <div class="title"><h1><%= current_page.data.title -%></h1></div>
