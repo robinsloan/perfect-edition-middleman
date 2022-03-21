@@ -192,7 +192,7 @@
 
       scrollTimer = setTimeout(() => {
         snapToPage();
-      }, 200);
+      }, 1000);
     });
   });
 
@@ -267,9 +267,10 @@
 <body>
 <div class="book">
 <div class="tutorial">
-  <h2>How to Read</h2>
+  <h2>How to read</h2>
   <p><i>On a phone:</i><br/>Tap the edges of the page</p>
-  <p><i>On a computer:</i><br/>Click the edges of the page, or use the arrow keys, or&nbsp;use&nbsp;the&nbsp;space&nbsp;bar</p>
+  <p><i>On a computer:</i><br/>Click the edges of the page, or use the arrow keys, the&nbsp;space&nbsp;bar, the&nbsp;trackpad, or&nbsp;the&nbsp;scroll&nbsp;wheel</p>
+  <p><i>On paper:</i></br>Print it out</p>
   <p>Basically, <small>everything works</small></p>
 </div>
 <div class="title"><h1><%= current_page.data.title -%></h1></div>
